@@ -11,3 +11,5 @@ jsEnv := new org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv()
 
 libraryDependencies += "com.lihaoyi" %%% "utest" % "0.7.4" % "test"
 testFrameworks += new TestFramework("utest.runner.Framework")
+
+//set scalaJSStage in Global := FullOptStage
