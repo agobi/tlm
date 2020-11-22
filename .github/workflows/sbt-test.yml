@@ -29,8 +29,8 @@ jobs:
             ${{ runner.os }}-cache1-${{ matrix.scala.binary-version }}-
       - name: Run test
         run: |
-          echo 'Run] sbt "; ++ ${{ matrix.scala.version }}!; scalaJSStage in Test := FullOptStage; clean; test"'
-          sbt "; ++ ${{ matrix.scala.version }}!; scalaJSStage in Test := FullOptStage; clean; test"
+          echo 'Run] sbt "; ++ ${{ matrix.scala.version }}!; set ThisBuild / scalaJSStage := FullOptStage; clean; test"'
+          sbt "; ++ ${{ matrix.scala.version }}!; set ThisBuild / scalaJSStage := FullOptStage; clean; test"
       - name: Clean up cache
         run: |
           rm -fv $HOME/.ivy2/.sbt.ivy.lock
