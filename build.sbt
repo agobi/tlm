@@ -19,9 +19,20 @@ scalacOptions --= {
   else List("-Xfatal-warnings")
 }
 
+val scalaJsReactV = "1.7.6"
+
 libraryDependencies ++= List(
-  "org.scala-js" %%% "scalajs-dom" % "1.1.0",
-  "com.lihaoyi" %%% "utest" % "0.7.4" % "test"
+  "org.typelevel"                     %%% "cats-core"   % "2.1.1",
+  "com.github.japgolly.scalajs-react" %%% "core"        % scalaJsReactV,
+  "com.github.japgolly.scalajs-react" %%% "extra"       % scalaJsReactV,
+  "com.github.japgolly.scalajs-react" %%% "test"        % scalaJsReactV % Test,
+  "org.scala-js"                      %%% "scalajs-dom" % "1.1.0",
+  "com.lihaoyi"                       %%% "utest"       % "0.7.4" % Test
+)
+
+npmDependencies in Compile ++= Seq(
+  "react" -> "16.13.1",
+  "react-dom" -> "16.13.1"
 )
 
 testFrameworks += new TestFramework("utest.runner.Framework")

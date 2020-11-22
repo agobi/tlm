@@ -1,4 +1,4 @@
-package tutorial.webapp
+package io.github.agobi.tlm
 
 import org.scalajs.dom
 import org.scalajs.dom.document
@@ -8,7 +8,7 @@ import utest._
 object TutorialTest extends TestSuite {
 
   // Initialize App
-  TutorialApp.setupUI()
+  Tutorial.setupUI(document.body)
 
   def tests = Tests {
     test("HelloWorld") {
