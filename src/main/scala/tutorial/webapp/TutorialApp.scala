@@ -15,10 +15,11 @@ object TutorialApp {
     val parNode = document.createElement("p")
     parNode.textContent = text
     targetNode.appendChild(parNode)
+    ()
   }
 
   def main(args: Array[String]): Unit = {
-    document.addEventListener("DOMContentLoaded", { (e: dom.Event) =>
+    document.addEventListener("DOMContentLoaded", { (_: dom.Event) =>
       setupUI()
     })
   }
@@ -26,7 +27,7 @@ object TutorialApp {
   def setupUI(): Unit = {
     val button = document.createElement("button")
     button.textContent = "Click me!"
-    button.addEventListener("click", { (e: dom.MouseEvent) =>
+    button.addEventListener("click", { (_: dom.MouseEvent) =>
       addClickedMessage()
     })
     document.body.appendChild(button)

@@ -1,12 +1,9 @@
 package tutorial.webapp
 
-import utest._
-
-import scala.scalajs.js
-
 import org.scalajs.dom
 import org.scalajs.dom.document
 import org.scalajs.dom.ext._
+import utest._
 
 object TutorialTest extends TestSuite {
 
@@ -17,7 +14,7 @@ object TutorialTest extends TestSuite {
     test("HelloWorld") {
       assert(document.querySelectorAll("p").count(_.textContent == "Hello World") == 1)
     }
-    
+
     test("ButtonClick") {
       def messageCount =
         document.querySelectorAll("p").count(_.textContent == "You clicked the button!")
