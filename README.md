@@ -1,3 +1,3 @@
-# ScalaJS tutorial
+# The Lazy Minesweeper
 
-https://www.scala-js.org/doc/tutorial/basic/index.html
+Idea from: https://www.stackage.org/package/minesweeper
