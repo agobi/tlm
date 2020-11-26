@@ -20,11 +20,14 @@ scalacOptions --= {
 }
 
 val scalaJsReactV = "1.7.6"
+val scalaCssV = "0.6.1"
 
 libraryDependencies ++= List(
   "org.typelevel"                     %%% "cats-core"   % "2.1.1",
   "com.github.japgolly.scalajs-react" %%% "core"        % scalaJsReactV,
   "com.github.japgolly.scalajs-react" %%% "extra"       % scalaJsReactV,
+  "com.github.japgolly.scalacss"      %%% "core"        % scalaCssV,
+  "com.github.japgolly.scalacss"      %%% "ext-react"   % scalaCssV,
   "com.github.japgolly.scalajs-react" %%% "test"        % scalaJsReactV % Test,
   "org.scala-js"                      %%% "scalajs-dom" % "1.1.0",
   "com.lihaoyi"                       %%% "utest"       % "0.7.4" % Test
