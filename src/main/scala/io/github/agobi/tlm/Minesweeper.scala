@@ -155,7 +155,7 @@ object Minesweeper {
         "\uD83D\uDEA9"
     }
 
-    private def renderFinalCell(x: Int, y: Int, cell: CellState): VdomTag = {
+    private def renderFinalCell(cell: CellState): VdomTag = {
       cell match {
         case Unknown(mine, marked) =>
           <.td(style.gameCell, <.div(renderUserMark(marked, Some(mine))))
@@ -181,7 +181,9 @@ object Minesweeper {
     }
 
     def render(state: State): VdomTag = {
-      val cellRenderer = if (state.finished.isDefined) { renderFinalCell _ } else { renderGameCell _ }
+      val cellRenderer: (Int, Int, CellState) => VdomTag =
+        if (state.finished.isDefined) { (_: Int, _: Int, c: CellState) => renderFinalCell(c) } else { renderGameCell _ }
+
       <.div(
         <.table(style.gameTable,
           <.caption(

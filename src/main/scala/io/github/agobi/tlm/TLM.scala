@@ -7,7 +7,7 @@ import scalacss.ScalaCssReact._
 
 
 object TLM {
-  class Backend(bs: BackendScope[Unit, Unit]) {
+  class Backend {
     def render() = {
       <.div(
         style.game,
