@@ -3,7 +3,7 @@ package io.github.agobi.tlm
 import io.github.agobi.tlm.styles.{DefaultCommonStyle => style}
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all.onClickCapture.Event
-import japgolly.scalajs.react.vdom.html_<^._
+import japgolly.scalajs.react.vdom.html_<^.{<, _}
 import scalacss.ScalaCssReact._
 
 import scala.annotation.tailrec
@@ -33,39 +33,40 @@ object Minesweeper {
   final case class UserStep(x: Int, y: Int) extends Step
   final case class ComputerStep(x: Int, y: Int, state: CellState) extends Step
 
+  sealed trait Finished
+  final case class Lost(x: Int, y: Int) extends Finished
+  case object Win extends Finished
+
   type Board = Vector[Vector[CellState]]
   final case class State(
     xSize: Int,
     ySize: Int,
     minesCount: Int,
     board: Board,
-    history: List[Step] = List.empty,
-    win: Option[Boolean] = None,
+    finished: Option[Finished] = None,
     revealed: Int = 0
   ) {
     def isIndexValid(x: Int, y: Int): Boolean = x >=0 && x < xSize && y >= 0 && y < ySize
 
-    def checkWin(): Option[Boolean] = {
-      if(xSize * ySize == revealed + minesCount) Some(true)
-      else None
-    }
 
     def guess(x: Int, y: Int): State = {
       val ret: State = revealCell(x, y) match {
-        case Some((board, r)) =>
+        case Some((newBoard, r)) =>
+          val newRevealed = revealed + r
+          val newFinished = if(xSize * ySize == newRevealed + minesCount) Some(Win)
+          else None
+
           copy(
-            history = UserStep(x, y) :: history,
-            board = board,
-            win = checkWin(),
-            revealed = revealed + r
+            board = newBoard,
+            revealed = newRevealed,
+            finished = newFinished
           )
+
         case None =>
-          copy(
-            history = UserStep(x, y) :: history,
-            win = Some(false)
-          )
+          copy(finished = Some(Lost(x, y)))
       }
 
+      require(ret.board.map(_.collect { case Empty(_) => () }.size).sum == ret.revealed, "Revealed count does not match")
       println(s"Cells to win ${ret.xSize * ret.ySize - ret.revealed - ret.minesCount}")
       ret
     }
@@ -81,7 +82,8 @@ object Minesweeper {
       queue.headOption match {
         case None => board -> checked.size
         case Some((x, y)) =>
-          require(!board(x)(y).isRevealed || !board(x)(y).hasMine)
+          require(!board(x)(y).isRevealed, "Internal error: already revealed!")
+          require(!board(x)(y).hasMine, "Internal error: mine!")
 
           val neighbors = (-1 to 1) flatMap { dx =>
             val x2 = x + dx
@@ -98,7 +100,7 @@ object Minesweeper {
           val cell = Empty(neighbors.count { case (x, y) => board(x)(y).hasMine })
           val queue2 = (
             if (cell.neighbors != 0) queue
-            else (queue ++ neighbors.filterNot { case (x, y) => board(x)(y).hasMine })
+            else queue ++ neighbors.filterNot { case (x, y) => board(x)(y).isRevealed }
           ) - (x -> y)
 
           revealCell(board.updated(x, row.updated(y, cell)), queue2, checked2)
@@ -179,14 +181,14 @@ object Minesweeper {
     }
 
     def render(state: State): VdomTag = {
-      val cellRenderer = if (state.win.isDefined) { renderFinalCell _ } else { renderGameCell _ }
+      val cellRenderer = if (state.finished.isDefined) { renderFinalCell _ } else { renderGameCell _ }
       <.div(
         <.table(style.gameTable,
           <.caption(
-            state.win match {
+            state.finished match {
               case None => "\uD83D\uDE42"
-              case Some(true) => "\uD83D\uDE0E"
-              case Some(false) => "\u2620\uFE0F️"
+              case Some(Win) => "\uD83D\uDE0E"
+              case Some(Lost(_, _)) => "\u2620\uFE0F️"
             }
           ),
           <.tbody(
@@ -198,8 +200,10 @@ object Minesweeper {
               )
             }.toTagMod
           )
-        )
+        ),
+        <.div(state.revealed)
       )
+
     }
   }
 
