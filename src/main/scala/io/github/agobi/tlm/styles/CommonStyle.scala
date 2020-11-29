@@ -1,6 +1,8 @@
 package io.github.agobi.tlm.styles
 
 import io.github.agobi.tlm.styles.CssSettings._
+import japgolly.scalajs.react.vdom.TagMod
+
 import scala.language.postfixOps
 
 class CommonStyle extends StyleSheet.Inline {
@@ -62,6 +64,24 @@ class CommonStyle extends StyleSheet.Inline {
     }
   ))
 
+  val neighborDomain = Domain.ofRange(0 to 8)
+  val neighborColorMap = Vector(
+    rgb(0x00, 0x00, 0x00), // 0
+    rgb(0x00, 0x00, 0xff), // 1
+    rgb(0x00, 0x81, 0x00), // 2
+    rgb(0xff, 0x13, 0x00), // 3
+    rgb(0x00, 0x00, 0x83), // 4
+    rgb(0x81, 0x05, 0x00), // 5
+    rgb(0x2a, 0x94, 0x94), // 6
+    rgb(0x00, 0x00, 0x00), // 7
+    rgb(0x80, 0x80, 0x80)  // 8
+  )
+
+  val neighborCount = styleF(neighborDomain)(neighbors => styleS(
+    color(neighborColorMap(neighbors))
+  ))
 }
 
-object DefaultCommonStyle extends CommonStyle
+object DefaultCommonStyle extends CommonStyle {
+
+}

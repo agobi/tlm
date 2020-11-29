@@ -1,5 +1,6 @@
 package io.github.agobi.tlm.components
 
+import io.github.agobi.tlm.components.MinesweeperBoard.SmileyFaceProps
 import io.github.agobi.tlm.model.{CellState, Empty, Unknown}
 import io.github.agobi.tlm.styles.{DefaultCommonStyle => style}
 import japgolly.scalajs.react.component.Scala.BackendScope
@@ -15,6 +16,16 @@ object MinesweeperCell {
   case object Unmarked   extends Marked
   case object MarkedMine extends Marked
 
+  val Neighbors =
+    ScalaComponent.builder[Int]
+      .stateless
+      .render_P { p =>
+        if(p == 0) <.div("\u00a0")
+        else <.div(style.neighborCount(p), p.toString)
+      }
+      .build
+
+
   case class Props(
     state: CellState,
     finished: Boolean,
@@ -23,7 +34,6 @@ object MinesweeperCell {
     failed: Boolean,
     marked: Marked
   )
-
 
   @Lenses
   case class State(
@@ -53,7 +63,7 @@ object MinesweeperCell {
         case Unknown(mine) =>
           <.td(style.gameCell(props.failed), <.div(renderUserMark(props.marked, Some(mine))))
         case Empty(neighbors) =>
-          <.td(style.gameCell(false), <.div(neighbors.toString))
+          <.td(style.gameCell(false), Neighbors(neighbors))
       }
     }
 
@@ -84,7 +94,7 @@ object MinesweeperCell {
             )
           )
         case Empty(neighbors) =>
-          <.td(style.gameCell(false), <.div(neighbors.toString))
+          <.td(style.gameCell(false), Neighbors(neighbors))
       }
     }
   }
