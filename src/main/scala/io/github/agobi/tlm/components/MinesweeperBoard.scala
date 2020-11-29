@@ -1,9 +1,8 @@
 package io.github.agobi.tlm.components
 
-import io.github.agobi.tlm.components.MinesweeperCell._
+import io.github.agobi.tlm.model.Board.BoardArray
 import io.github.agobi.tlm.model._
 import io.github.agobi.tlm.styles.{DefaultCommonStyle => style}
-import japgolly.scalajs.react.vdom.all.onClickCapture.Event
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{ScalaComponent, _}
 import monocle.macros.Lenses
@@ -53,34 +52,13 @@ object MinesweeperBoard {
       state.board.get(x, y) match {
         case Empty(_) =>
           state
-        case Unknown(_, _) =>
+        case Unknown(_) =>
           state.copy(board = state.board.guess(x, y))
       }
     }
 
     private def clickHandler(x: Int, y: Int): Callback =
       bs.modState(addUserStep(_, x, y))
-
-    def markCell(state: State, x: Int, y: Int): State = {
-      println(s"User right clicked on $x:$y")
-
-      val row = state.board.row(x)
-      row(y) match {
-        case Empty(_) => state
-        case Unknown(_, Unmarked) =>
-          state.copy(board = state.board.update(x, y)(_ => MarkedMine))
-        case Unknown(_, MarkedMine) =>
-          state.copy(board = state.board.update(x, y)(_ => Unmarked))
-      }
-    }
-
-    private def contextHandler(x: Int, y: Int)(e: Event): Callback = {
-      println(s"User right clicked on $x:$y")
-      e.preventDefault()
-      bs.modState { s =>
-        markCell(s, x, y)
-      }
-    }
 
     private def restartGame(): Callback = {
       bs.setState(initializeState)
@@ -109,7 +87,6 @@ object MinesweeperBoard {
                         cell,
                         state.board.finished.isDefined,
                         clickHandler(x, y),
-                        contextHandler(x, y),
                         x == failX && y == failY
                       )
                   }.toTagMod
@@ -138,9 +115,9 @@ object MinesweeperBoard {
       mines + generateXY(mines)
     }
 
-    val map = Vector.from(0 until xSize map { x =>
+    val map: BoardArray = Vector.from(0 until xSize map { x =>
       Vector.from(0 until ySize map { y =>
-        Unknown(mines.contains(x -> y), marked = Unmarked)
+        Unknown(mines.contains(x -> y))
       })
     })
 
@@ -149,7 +126,7 @@ object MinesweeperBoard {
 
   val component = {
     ScalaComponent
-      .builder[Unit]("Minesweeper>")
+      .builder[Unit]("Minesweeper")
       .initialState(initializeState)
       .renderBackend[Backend]
       .build

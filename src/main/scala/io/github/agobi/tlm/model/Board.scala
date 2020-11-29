@@ -1,25 +1,16 @@
 package io.github.agobi.tlm.model
 
-import io.github.agobi.tlm.components.MinesweeperCell.Marked
 import io.github.agobi.tlm.model.Board.BoardArray
 
 import scala.annotation.tailrec
 
-sealed trait CellState {
+sealed abstract class CellState(val isRevealed: Boolean) {
   def hasMine: Boolean
-  def isRevealed: Boolean
-  def update(f: Marked => Marked): CellState
 }
 
-case class Unknown(override val hasMine: Boolean, marked: Marked) extends CellState {
-  override def isRevealed: Boolean = false
-  override def update(f: Marked => Marked): CellState = copy(hasMine, f(marked))
-}
-
-case class Empty(neighbors: Int) extends CellState {
-  override def hasMine: Boolean    = false
-  override def isRevealed: Boolean = true
-  override def update(f: Marked => Marked): CellState = this
+case class Unknown(override val hasMine: Boolean) extends CellState(false)
+case class Empty(neighbors: Int) extends CellState(true) {
+  override def hasMine: Boolean = false
 }
 
 sealed trait Finished
@@ -34,11 +25,6 @@ final case class Board(
   finished: Option[Finished] = None,
   revealed: Int = 0
 ) {
-  def update(x: Int, y: Int)(f: Marked => Marked): Board = {
-    val row = board(x)
-    val cell = row(y)
-    copy(board = board.updated(x, row.updated(y, cell.update(f))))
-  }
 
   def get(x: Int, y: Int): CellState = board(x)(y)
 

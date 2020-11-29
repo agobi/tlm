@@ -6,6 +6,7 @@ import japgolly.scalajs.react.component.Scala.BackendScope
 import japgolly.scalajs.react.vdom.all.onClickCapture.Event
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{Callback, ScalaComponent}
+import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 
 
@@ -18,15 +19,21 @@ object MinesweeperCell {
     state: CellState,
     finished: Boolean,
     onClick: Callback,
-    onContextMenu: Event => Callback,
     failed: Boolean
   )
 
-  class Backend(bs: BackendScope[Props, Boolean]) {
 
-    def render(state: Boolean, props: Props) = {
-      if (props.finished) renderFinalCell(props.state, props.failed)
-      else renderGameCell(state, props.state, props.onClick, props.onContextMenu)
+  @Lenses
+  case class State(
+    pushed: Boolean,
+    marked: Marked
+  )
+
+  class Backend($: BackendScope[Props, State]) {
+
+    def render(state: State, props: Props) = {
+      if (props.finished) renderFinalCell(state, props.state, props.failed)
+      else renderGameCell(state, props.state, props.onClick)
     }
 
     private def renderUserMark(marked: Marked, mine: Option[Boolean]) = (marked, mine) match {
@@ -40,31 +47,39 @@ object MinesweeperCell {
         "\uD83D\uDEA9"
     }
 
-    private def renderFinalCell(cell: CellState, failed: Boolean): VdomTag = {
+    private def renderFinalCell(state: State, cell: CellState, failed: Boolean): VdomTag = {
       cell match {
-        case Unknown(mine, marked) =>
-          <.td(style.gameCell(failed), <.div(renderUserMark(marked, Some(mine))))
+        case Unknown(mine) =>
+          <.td(style.gameCell(failed), <.div(renderUserMark(state.marked, Some(mine))))
         case Empty(neighbors) =>
           <.td(style.gameCell(false), <.div(neighbors.toString))
       }
     }
 
-    private def renderGameCell(state: Boolean, cell: CellState, clickHandler: Callback, contextHandler: Event => Callback): VdomTag = {
+
+    private def contextHandler(e: Event): Callback = {
+      e.preventDefault()
+      $.modState(State.marked.modify {
+        case Unmarked => MarkedMine
+        case MarkedMine => Unmarked
+      })
+    }
+
+
+    private def renderGameCell(state: State, cell: CellState, clickHandler: Callback): VdomTag = {
       cell match {
-        case Unknown(_, marked) =>
+        case Unknown(_) =>
           <.td(
             style.gameCell(false),
             <.div(
-              style.clickableGameCell(state),
-              renderUserMark(marked, None),
+              style.clickableGameCell(state.pushed),
+              renderUserMark(state.marked, None),
               ^.onClick --> clickHandler,
               ^.onContextMenu ==> contextHandler,
-              ^.onMouseDown --> bs.setState(true),
-              ^.onMouseUp --> bs.setState(false),
-              ^.onMouseEnter ==> { e =>
-                bs.setState(e.buttons != 0)
-              },
-              ^.onMouseLeave --> bs.setState(false)
+              ^.onMouseDown --> $.modState(State.pushed.set(true)),
+              ^.onMouseUp --> $.modState(State.pushed.set(false)),
+              ^.onMouseEnter ==> { e => $.modState(State.pushed.set(e.buttons != 0)) },
+              ^.onMouseLeave --> $.modState(State.pushed.set(false)),
             )
           )
         case Empty(neighbors) =>
@@ -75,7 +90,7 @@ object MinesweeperCell {
 
   val component =
     ScalaComponent.builder[Props]
-      .initialState(false)
+      .initialState(State(pushed = false, Unmarked))
       .renderBackend[Backend]
       .build
 
@@ -83,8 +98,7 @@ object MinesweeperCell {
     state: CellState,
     finished: Boolean,
     onClick: Callback,
-    onContextMenu: Event => Callback,
     failed: Boolean
-  ) = component(Props(state, finished, onClick, onContextMenu, failed))
+  ) = component(Props(state, finished, onClick, failed))
 
 }
