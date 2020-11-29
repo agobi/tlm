@@ -14,6 +14,7 @@ scalaJSUseMainModuleInitializer := true
 requireJsDomEnv in Test := true
 useYarn := true
 
+scalacOptions += "-Ymacro-annotations"
 scalacOptions --= {
   if (insideCI.value) Nil
   else List("-Xfatal-warnings")
@@ -30,7 +31,10 @@ libraryDependencies ++= List(
   "com.github.japgolly.scalacss"      %%% "ext-react"   % scalaCssV,
   "com.github.japgolly.scalajs-react" %%% "test"        % scalaJsReactV % Test,
   "org.scala-js"                      %%% "scalajs-dom" % "1.1.0",
-  "com.lihaoyi"                       %%% "utest"       % "0.7.4" % Test
+  "com.lihaoyi"                       %%% "utest"       % "0.7.4" % Test,
+  "com.github.japgolly.scalajs-react" %%% "ext-monocle-cats" % "1.7.7",
+  "com.github.julien-truffaut"        %%% "monocle-core"     % "2.0.4",
+  "com.github.julien-truffaut"        %%% "monocle-macro"    % "2.0.4"
 )
 
 npmDependencies in Compile ++= Seq(

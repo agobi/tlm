@@ -6,6 +6,7 @@ import io.github.agobi.tlm.styles.{DefaultCommonStyle => style}
 import japgolly.scalajs.react.vdom.all.onClickCapture.Event
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{ScalaComponent, _}
+import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 
 import scala.annotation.tailrec
@@ -14,7 +15,8 @@ import scala.util.Random
 
 object MinesweeperBoard {
 
-  case class State(board: Board)
+  @Lenses
+  case class State(board: Board, mouseDown: Boolean)
 
   class Backend(bs: BackendScope[Unit, State]) {
 
@@ -62,11 +64,15 @@ object MinesweeperBoard {
       <.div(
         <.table(
           style.gameTable,
+          ^.onMouseDown --> bs.modState(State.mouseDown.set(true)),
+          ^.onMouseUp --> bs.modState(State.mouseDown.set(false)),
+          ^.onMouseLeave --> bs.modState(State.mouseDown.set(false)),
           <.caption(
             state.board.finished match {
-              case None             => "\uD83D\uDE42"
-              case Some(Win)        => "\uD83D\uDE0E"
-              case Some(Lost(_, _)) => "\u2620\uFE0F️"
+              case None if state.mouseDown => "\uD83D\uDE1F"
+              case None                    => "\uD83D\uDE42"
+              case Some(Win)               => "\uD83D\uDE0E"
+              case Some(Lost(_, _))        => "\uD83D\uDE35"
             }
           ),
           <.tbody(
@@ -116,7 +122,7 @@ object MinesweeperBoard {
       })
     })
 
-    State(Board(xSize, ySize, mineCount, map))
+    State(Board(xSize, ySize, mineCount, map), false)
   }
 
   val component = {
