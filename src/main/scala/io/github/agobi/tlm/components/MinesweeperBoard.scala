@@ -1,10 +1,12 @@
 package io.github.agobi.tlm.components
 
+import io.github.agobi.tlm.components.MinesweeperCell.{Marked, Unmarked}
 import io.github.agobi.tlm.model._
 import io.github.agobi.tlm.styles.{DefaultCommonStyle => style}
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{ScalaComponent, _}
 import monocle.macros.Lenses
+import monocle.function.all._
 import scalacss.ScalaCssReact._
 
 
@@ -38,7 +40,7 @@ object MinesweeperBoard {
     SmileyFace(SmileyFaceProps(onClick, worried, finished))
 
   @Lenses
-  case class State(board: Board, mouseDown: Boolean)
+  case class State(board: Board, mouseDown: Boolean, marked: Vector[Vector[Marked]])
 
   class Backend(bs: BackendScope[Unit, State]) {
     private def userGuess(x: Int, y: Int): Callback =
@@ -76,7 +78,11 @@ object MinesweeperBoard {
                         cell,
                         state.board.finished.isDefined,
                         userGuess(x, y),
-                        x == failX && y == failY
+                        { f =>
+                          bs.modState(State.marked composeOptional index(x) composeOptional index(y) modify f)
+                        },
+                        x == failX && y == failY,
+                        state.marked(x)(y)
                       )
                   }.toTagMod
                 )
@@ -92,7 +98,8 @@ object MinesweeperBoard {
     val ySize     = 10
     val mineCount = 10
 
-    State(Board(xSize, ySize, mineCount), mouseDown = false)
+    val marks = Vector.from(0 until xSize map { _ => Vector.from(0 until ySize map { _ =>  Unmarked } ) } )
+    State(Board(xSize, ySize, mineCount), mouseDown = false, marks)
   }
 
   val component = {
