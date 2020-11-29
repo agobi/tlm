@@ -3,6 +3,7 @@ package io.github.agobi.tlm.model
 import io.github.agobi.tlm.model.Board.BoardArray
 
 import scala.annotation.tailrec
+import scala.util.Random
 
 sealed abstract class CellState(val isRevealed: Boolean) {
   def hasMine: Boolean
@@ -101,4 +102,26 @@ final case class Board(
 
 object Board {
   type BoardArray = Vector[Vector[CellState]]
+
+  def apply(xSize: Int, ySize: Int, mineCount: Int): Board = {
+    @tailrec
+    def generateXY(mines: Set[(Int, Int)]): (Int, Int) = {
+      val x = Random.nextInt(xSize)
+      val y = Random.nextInt(ySize)
+      if (mines.contains(x -> y)) generateXY(mines)
+      else x -> y
+    }
+
+    val mines: Set[(Int, Int)] = (1 to mineCount).foldLeft(Set.empty[(Int, Int)]) { (mines, _) =>
+      mines + generateXY(mines)
+    }
+
+    val map: BoardArray = Vector.from(0 until xSize map { x =>
+      Vector.from(0 until ySize map { y =>
+        Unknown(mines.contains(x -> y))
+      })
+    })
+
+    Board(xSize, ySize, mineCount, map)
+  }
 }

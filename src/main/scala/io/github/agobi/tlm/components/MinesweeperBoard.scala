@@ -1,15 +1,11 @@
 package io.github.agobi.tlm.components
 
-import io.github.agobi.tlm.model.Board.BoardArray
 import io.github.agobi.tlm.model._
 import io.github.agobi.tlm.styles.{DefaultCommonStyle => style}
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{ScalaComponent, _}
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
-
-import scala.annotation.tailrec
-import scala.util.Random
 
 
 object MinesweeperBoard {
@@ -45,10 +41,7 @@ object MinesweeperBoard {
   case class State(board: Board, mouseDown: Boolean)
 
   class Backend(bs: BackendScope[Unit, State]) {
-
     private def addUserStep(state: State, x: Int, y: Int): State = {
-      println(s"User clicked on $x:$y")
-
       state.board.get(x, y) match {
         case Empty(_) =>
           state
@@ -57,7 +50,7 @@ object MinesweeperBoard {
       }
     }
 
-    private def clickHandler(x: Int, y: Int): Callback =
+    private def userGuess(x: Int, y: Int): Callback =
       bs.modState(addUserStep(_, x, y))
 
     private def restartGame(): Callback = {
@@ -86,7 +79,7 @@ object MinesweeperBoard {
                       MinesweeperCell(
                         cell,
                         state.board.finished.isDefined,
-                        clickHandler(x, y),
+                        userGuess(x, y),
                         x == failX && y == failY
                       )
                   }.toTagMod
@@ -103,25 +96,7 @@ object MinesweeperBoard {
     val ySize     = 10
     val mineCount = 10
 
-    @tailrec
-    def generateXY(mines: Set[(Int, Int)]): (Int, Int) = {
-      val x = Random.nextInt(xSize)
-      val y = Random.nextInt(ySize)
-      if (mines.contains(x -> y)) generateXY(mines)
-      else x -> y
-    }
-
-    val mines: Set[(Int, Int)] = (1 to mineCount).foldLeft(Set.empty[(Int, Int)]) { (mines, _) =>
-      mines + generateXY(mines)
-    }
-
-    val map: BoardArray = Vector.from(0 until xSize map { x =>
-      Vector.from(0 until ySize map { y =>
-        Unknown(mines.contains(x -> y))
-      })
-    })
-
-    State(Board(xSize, ySize, mineCount, map), false)
+    State(Board(xSize, ySize, mineCount), mouseDown = false)
   }
 
   val component = {
