@@ -1,7 +1,6 @@
 package io.github.agobi.tlm.styles
 
 import io.github.agobi.tlm.styles.CssSettings._
-import japgolly.scalajs.react.vdom.TagMod
 
 import scala.language.postfixOps
 
@@ -11,6 +10,8 @@ class CommonStyle extends StyleSheet.Inline {
   val game = style(
     unsafeRoot("body") {
       style(
+        padding(`0`),
+        margin(`0`),
         fontSize(18 px),
         fontFamily :=! "arial"
       )

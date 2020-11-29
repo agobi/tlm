@@ -1,6 +1,5 @@
 package io.github.agobi.tlm.components
 
-import io.github.agobi.tlm.components.MinesweeperBoard.SmileyFaceProps
 import io.github.agobi.tlm.model.{CellState, Empty, Unknown}
 import io.github.agobi.tlm.styles.{DefaultCommonStyle => style}
 import japgolly.scalajs.react.component.Scala.BackendScope
