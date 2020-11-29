@@ -41,17 +41,13 @@ object MinesweeperBoard {
   case class State(board: Board, mouseDown: Boolean)
 
   class Backend(bs: BackendScope[Unit, State]) {
-    private def addUserStep(state: State, x: Int, y: Int): State = {
-      state.board.get(x, y) match {
-        case Empty(_) =>
-          state
-        case Unknown(_) =>
-          state.copy(board = state.board.guess(x, y))
-      }
-    }
-
     private def userGuess(x: Int, y: Int): Callback =
-      bs.modState(addUserStep(_, x, y))
+      bs.modState(State.board.modify(board => board.get(x, y) match {
+        case Empty(_) =>
+          board
+        case Unknown(_) =>
+          board.guess(x, y)
+      }))
 
     private def restartGame(): Callback = {
       bs.setState(initializeState)
