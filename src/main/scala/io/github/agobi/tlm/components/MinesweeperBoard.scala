@@ -14,6 +14,33 @@ import scala.util.Random
 
 
 object MinesweeperBoard {
+  case class SmileyFaceProps(onClick: Callback, worried: Boolean, finished: Option[Finished])
+
+  val SmileyFace =
+    ScalaComponent.builder[SmileyFaceProps]
+      .initialState(false)
+      .renderPS({ (bs, props, pushed) =>
+        <.div(
+          style.gameCell(false),
+          <.div(
+            style.clickableGameCell(pushed),
+            ^.onClick --> props.onClick,
+            ^.onMouseDown --> bs.setState(true),
+            ^.onMouseUp --> bs.setState(false),
+            ^.onMouseLeave --> bs.setState(false),
+            props.finished match {
+              case None if props.worried => "\uD83D\uDE1F"
+              case None                  => "\uD83D\uDE42"
+              case Some(Win)             => "\uD83D\uDE0E"
+              case Some(Lost(_, _))      => "\uD83D\uDE35"
+            }
+          )
+        )
+      })
+      .build
+
+  def smileyFace(onClick: Callback, worried: Boolean, finished: Option[Finished]) =
+    SmileyFace(SmileyFaceProps(onClick, worried, finished))
 
   @Lenses
   case class State(board: Board, mouseDown: Boolean)
@@ -55,6 +82,10 @@ object MinesweeperBoard {
       }
     }
 
+    private def restartGame(): Callback = {
+      bs.setState(initializeState)
+    }
+
     def render(state: State): VdomTag = {
       val (failX, failY) = state.board.finished match {
         case Some(Lost(x, y)) => x -> y
@@ -64,18 +95,11 @@ object MinesweeperBoard {
       <.div(
         <.table(
           style.gameTable,
-          ^.onMouseDown --> bs.modState(State.mouseDown.set(true)),
-          ^.onMouseUp --> bs.modState(State.mouseDown.set(false)),
-          ^.onMouseLeave --> bs.modState(State.mouseDown.set(false)),
-          <.caption(
-            state.board.finished match {
-              case None if state.mouseDown => "\uD83D\uDE1F"
-              case None                    => "\uD83D\uDE42"
-              case Some(Win)               => "\uD83D\uDE0E"
-              case Some(Lost(_, _))        => "\uD83D\uDE35"
-            }
-          ),
+          <.caption(smileyFace(restartGame(), state.mouseDown, state.board.finished)),
           <.tbody(
+            ^.onMouseDown --> bs.modState(State.mouseDown.set(true)),
+            ^.onMouseUp --> bs.modState(State.mouseDown.set(false)),
+            ^.onMouseLeave --> bs.modState(State.mouseDown.set(false)),
             state.board.board.zipWithIndex.map {
               case (row, x) =>
                 <.tr(
@@ -92,10 +116,8 @@ object MinesweeperBoard {
                 )
             }.toTagMod
           )
-        ),
-        <.div(state.board.revealed)
+        )
       )
-
     }
   }
 

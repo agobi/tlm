@@ -28,21 +28,26 @@ class CommonStyle extends StyleSheet.Inline {
       borderLeft(1 px, solid, grey(0x80)),
       borderRight(1 px, solid, grey(0x80)),
       backgroundColor(grey(0xec)),
-      padding(0.2 em, `0`, 0.2 em, `0`)
+      padding(0.5 em, `0`, 0.5 em, `0`),
+      unsafeChild("div") {
+        display.inlineBlock
+      }
+    ),
+    unsafeChild("td")(
+      padding.`0`,
+      margin.`0`,
     )
   )
 
   val gameCell = styleF.bool(failed => styleS(
     border(1 px, solid, grey(0x80)),
     backgroundColor(if (failed) red else inherit),
-    padding.`0`,
-    margin.`0`,
     verticalAlign.middle,
     textAlign.center,
     unsafeChild("div")(
-      width(1.4 em),
-      height(1.4 em),
-      lineHeight(1.4 em),
+      width(1.5 em),
+      height(1.5 em),
+      lineHeight(1.5 em),
       padding(0 em),
       boxSizing.borderBox
   )))
