@@ -8,14 +8,7 @@ class CommonStyle extends StyleSheet.Inline {
   import dsl._
 
   val game = style(
-    unsafeRoot("body") {
-      style(
-        padding(`0`),
-        margin(`0`),
-        fontSize(18 px),
-        fontFamily :=! "arial"
-      )
-    }
+    font := "18px arial"
   )
 
   val gameTable = style(
@@ -32,9 +25,10 @@ class CommonStyle extends StyleSheet.Inline {
       borderRight(1 px, solid, grey(0x80)),
       backgroundColor(grey(0xec)),
       padding(0.5 em, `0`, 0.5 em, `0`),
-      unsafeChild("div") {
-        display.inlineBlock
-      }
+      unsafeChild("div")(
+        display.inlineBlock,
+        boxSizing.borderBox
+      )
     ),
     unsafeChild("td")(
       padding.`0`,
@@ -47,21 +41,24 @@ class CommonStyle extends StyleSheet.Inline {
     backgroundColor(if (failed) red else inherit),
     verticalAlign.middle,
     textAlign.center,
+    cursor.pointer,
+    &.hover {
+      backgroundColor(grey(0xdc))
+    },
     unsafeChild("div")(
       width(1.5 em),
       height(1.5 em),
       lineHeight(1.5 em),
       padding(0 em),
-      boxSizing.borderBox
+      boxSizing.borderBox,
   )))
 
   val clickableGameCell = styleF.bool(pushed => styleS(
     backgroundColor(grey(0xc0)),
     if (pushed) border(2 px, inset) else border(2 px, outset),
     borderSpacing.`0`,
-    cursor.pointer,
     &.hover {
-      backgroundColor(grey(0xb0))
+      backgroundColor(grey(0xa0))
     }
   ))
 
