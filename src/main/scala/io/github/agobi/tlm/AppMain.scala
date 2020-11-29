@@ -1,5 +1,6 @@
 package io.github.agobi.tlm
 
+import io.github.agobi.tlm.components.TLM
 import io.github.agobi.tlm.styles.CssSettings._
 import io.github.agobi.tlm.styles.DefaultCommonStyle
 import org.scalajs.dom

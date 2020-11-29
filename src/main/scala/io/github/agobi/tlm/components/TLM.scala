@@ -1,22 +1,25 @@
-package io.github.agobi.tlm
+package io.github.agobi.tlm.components
 
-import japgolly.scalajs.react._
-import japgolly.scalajs.react.vdom.html_<^._
 import io.github.agobi.tlm.styles.{DefaultCommonStyle => style}
+import japgolly.scalajs.react.ScalaComponent
+import japgolly.scalajs.react.vdom.html_<^.<
 import scalacss.ScalaCssReact._
 
 
 object TLM {
+
   class Backend {
+
     def render() = {
       <.div(
         style.game,
-        Minesweeper()
+        MinesweeperBoard()
       )
     }
   }
 
-  val component = ScalaComponent.builder[Unit]("Tutorial")
+  val component = ScalaComponent
+    .builder[Unit]("MinesweeperApp")
     .renderBackend[Backend]
     .build
 

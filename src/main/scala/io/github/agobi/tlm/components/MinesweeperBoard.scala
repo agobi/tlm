@@ -1,43 +1,24 @@
-package io.github.agobi.tlm
+package io.github.agobi.tlm.components
 
+import io.github.agobi.tlm.components.MinesweeperCell._
 import io.github.agobi.tlm.styles.{DefaultCommonStyle => style}
-import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all.onClickCapture.Event
-import japgolly.scalajs.react.vdom.html_<^.{<, _}
+import japgolly.scalajs.react.vdom.html_<^._
+import japgolly.scalajs.react.{ScalaComponent, _}
 import scalacss.ScalaCssReact._
 
 import scala.annotation.tailrec
 import scala.util.Random
 
 
-object Minesweeper {
-  sealed trait Marked
-  case object Unmarked extends Marked
-  case object MarkedMine extends Marked
-
-  sealed trait CellState {
-    def hasMine: Boolean
-    def isRevealed: Boolean
-  }
-
-  case class Unknown(override val hasMine: Boolean, marked: Marked) extends CellState {
-    override def isRevealed: Boolean = false
-  }
-
-  case class Empty(neighbors: Int) extends CellState {
-    override def hasMine: Boolean = false
-    override def isRevealed: Boolean = true
-  }
-
-  sealed trait Step
-  final case class UserStep(x: Int, y: Int) extends Step
-  final case class ComputerStep(x: Int, y: Int, state: CellState) extends Step
-
+object MinesweeperBoard {
   sealed trait Finished
   final case class Lost(x: Int, y: Int) extends Finished
-  case object Win extends Finished
+  case object Win                       extends Finished
+
 
   type Board = Vector[Vector[CellState]]
+
   final case class State(
     xSize: Int,
     ySize: Int,
@@ -46,15 +27,15 @@ object Minesweeper {
     finished: Option[Finished] = None,
     revealed: Int = 0
   ) {
-    def isIndexValid(x: Int, y: Int): Boolean = x >=0 && x < xSize && y >= 0 && y < ySize
-
+    def isIndexValid(x: Int, y: Int): Boolean = x >= 0 && x < xSize && y >= 0 && y < ySize
 
     def guess(x: Int, y: Int): State = {
       val ret: State = revealCell(x, y) match {
         case Some((newBoard, r)) =>
           val newRevealed = revealed + r
-          val newFinished = if(xSize * ySize == newRevealed + minesCount) Some(Win)
-          else None
+          val newFinished =
+            if (xSize * ySize == newRevealed + minesCount) Some(Win)
+            else None
 
           copy(
             board = newBoard,
@@ -66,19 +47,26 @@ object Minesweeper {
           copy(finished = Some(Lost(x, y)))
       }
 
-      require(ret.board.map(_.collect { case Empty(_) => () }.size).sum == ret.revealed, "Revealed count does not match")
+      require(
+        ret.board.map(_.collect { case Empty(_) => () }.size).sum == ret.revealed,
+        "Revealed count does not match"
+      )
       println(s"Cells to win ${ret.xSize * ret.ySize - ret.revealed - ret.minesCount}")
       ret
     }
 
     private def revealCell(x: Int, y: Int): Option[(Board, Int)] = {
       if (board(x)(y).hasMine) None
-      else if(board(x)(y).isRevealed) Some(board -> 0)
+      else if (board(x)(y).isRevealed) Some(board -> 0)
       else Some(revealCell(board, Set(x -> y), Set.empty))
     }
 
     @tailrec
-    private def revealCell(board: Board, queue: Set[(Int, Int)], checked: Set[(Int, Int)]): (Vector[Vector[CellState]], Int) = {
+    private def revealCell(
+      board: Board,
+      queue: Set[(Int, Int)],
+      checked: Set[(Int, Int)]
+    ): (Vector[Vector[CellState]], Int) = {
       queue.headOption match {
         case None => board -> checked.size
         case Some((x, y)) =>
@@ -96,8 +84,8 @@ object Minesweeper {
           }
 
           val checked2 = checked + (x -> y)
-          val row = board(x)
-          val cell = Empty(neighbors.count { case (x, y) => board(x)(y).hasMine })
+          val row      = board(x)
+          val cell     = Empty(neighbors.count { case (x, y) => board(x)(y).hasMine })
           val queue2 = (
             if (cell.neighbors != 0) queue
             else queue ++ neighbors.filterNot { case (x, y) => board(x)(y).isRevealed }
@@ -109,6 +97,7 @@ object Minesweeper {
   }
 
   class Backend(bs: BackendScope[Unit, State]) {
+
     private def addUserStep(state: State, x: Int, y: Int): State = {
       println(s"User clicked on $x:$y")
 
@@ -131,8 +120,10 @@ object Minesweeper {
       val row = state.board(x)
       row(y) match {
         case Empty(_) => state
-        case s@Unknown(_, Unmarked) => state.copy(board = state.board.updated(x, row.updated(y, s.copy(marked = MarkedMine))))
-        case s@Unknown(_, MarkedMine) => state.copy(board = state.board.updated(x, row.updated(y, s.copy(marked = Unmarked))))
+        case s @ Unknown(_, Unmarked) =>
+          state.copy(board = state.board.updated(x, row.updated(y, s.copy(marked = MarkedMine))))
+        case s @ Unknown(_, MarkedMine) =>
+          state.copy(board = state.board.updated(x, row.updated(y, s.copy(marked = Unmarked))))
       }
     }
 
@@ -144,62 +135,37 @@ object Minesweeper {
       }
     }
 
-    private def renderUserMark(marked: Marked, mine: Option[Boolean]) = (marked, mine) match {
-      case (Unmarked, Some(true)) =>
-        "\uD83D\uDCA3"
-      case (Unmarked, _) =>
-        "\u00a0"
-      case (MarkedMine, Some(false)) =>
-        "\uD83D\uDEA9"
-      case (MarkedMine, _) =>
-        "\uD83D\uDEA9"
-    }
-
-    private def renderFinalCell(cell: CellState): VdomTag = {
-      cell match {
-        case Unknown(mine, marked) =>
-          <.td(style.gameCell, <.div(renderUserMark(marked, Some(mine))))
-        case Empty(neighbors) =>
-          <.td(style.gameCell, <.div(neighbors.toString))
-      }
-    }
-
-    private def renderGameCell(x: Int, y: Int, cell: CellState): VdomTag = {
-      cell match {
-        case Unknown(_, marked) =>
-          <.td(style.gameCell,
-            <.div(
-              style.clickableGameCell,
-              renderUserMark(marked, None),
-              ^.onClick --> clickHandler(x, y),
-              ^.onContextMenu ==> contextHandler(x, y)
-            )
-          )
-        case Empty(neighbors) =>
-          <.td(style.gameCell, <.div(neighbors.toString))
-      }
-    }
-
     def render(state: State): VdomTag = {
-      val cellRenderer: (Int, Int, CellState) => VdomTag =
-        if (state.finished.isDefined) { (_: Int, _: Int, c: CellState) => renderFinalCell(c) } else { renderGameCell _ }
+      val (failX, failY) = state.finished match {
+        case Some(Lost(x, y)) => x -> y
+        case _                => -1 -> -1
+      }
 
       <.div(
-        <.table(style.gameTable,
+        <.table(
+          style.gameTable,
           <.caption(
             state.finished match {
-              case None => "\uD83D\uDE42"
-              case Some(Win) => "\uD83D\uDE0E"
+              case None             => "\uD83D\uDE42"
+              case Some(Win)        => "\uD83D\uDE0E"
               case Some(Lost(_, _)) => "\u2620\uFE0F️"
             }
           ),
           <.tbody(
-            state.board.zipWithIndex.map { case (row, x) =>
-              <.tr(
-                row.zipWithIndex.map { case (cell, y) =>
-                  cellRenderer(x, y, cell)
-                }.toTagMod
-              )
+            state.board.zipWithIndex.map {
+              case (row, x) =>
+                <.tr(
+                  row.zipWithIndex.map {
+                    case (cell, y) =>
+                      MinesweeperCell(
+                        cell,
+                        state.finished.isDefined,
+                        clickHandler(x, y),
+                        contextHandler(x, y),
+                        x == failX && y == failY
+                      )
+                  }.toTagMod
+                )
             }.toTagMod
           )
         ),
@@ -209,17 +175,16 @@ object Minesweeper {
     }
   }
 
-
   private def initializeState: State = {
-    val xSize = 10
-    val ySize = 10
+    val xSize     = 10
+    val ySize     = 10
     val mineCount = 10
 
     @tailrec
     def generateXY(mines: Set[(Int, Int)]): (Int, Int) = {
       val x = Random.nextInt(xSize)
       val y = Random.nextInt(ySize)
-      if(mines.contains(x -> y)) generateXY(mines)
+      if (mines.contains(x -> y)) generateXY(mines)
       else x -> y
     }
 
@@ -237,7 +202,8 @@ object Minesweeper {
   }
 
   val component = {
-    ScalaComponent.builder[Unit]("Minesweeper>")
+    ScalaComponent
+      .builder[Unit]("Minesweeper>")
       .initialState(initializeState)
       .renderBackend[Backend]
       .build

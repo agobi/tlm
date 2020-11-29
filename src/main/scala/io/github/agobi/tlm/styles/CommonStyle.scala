@@ -16,6 +16,7 @@ class CommonStyle extends StyleSheet.Inline {
   )
 
   val gameTable = style(
+    userSelect.none,
     backgroundColor(grey(0xec)),
     borderCollapse.collapse,
     width.auto,
@@ -31,8 +32,9 @@ class CommonStyle extends StyleSheet.Inline {
     )
   )
 
-  val gameCell = style(
+  val gameCell = styleF.bool(failed => styleS(
     border(1 px, solid, grey(0x80)),
+    backgroundColor(if (failed) red else inherit),
     padding.`0`,
     margin.`0`,
     verticalAlign.middle,
@@ -43,18 +45,18 @@ class CommonStyle extends StyleSheet.Inline {
       lineHeight(1.4 em),
       padding(0 em),
       boxSizing.borderBox
-    )
-  )
+  )))
 
-  val clickableGameCell = style(
+  val clickableGameCell = styleF.bool(pushed => styleS(
     backgroundColor(grey(0xc0)),
-    border(2 px, outset),
+    if (pushed) border(2 px, inset) else border(2 px, outset),
     borderSpacing.`0`,
     cursor.pointer,
     &.hover {
       backgroundColor(grey(0xb0))
     }
-  )
+  ))
+
 }
 
 object DefaultCommonStyle extends CommonStyle
