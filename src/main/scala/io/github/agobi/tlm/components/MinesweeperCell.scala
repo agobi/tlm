@@ -1,5 +1,6 @@
 package io.github.agobi.tlm.components
 
+import io.github.agobi.tlm.model.{CellState, Empty, Unknown}
 import io.github.agobi.tlm.styles.{DefaultCommonStyle => style}
 import japgolly.scalajs.react.component.Scala.BackendScope
 import japgolly.scalajs.react.vdom.all.onClickCapture.Event
@@ -12,20 +13,6 @@ object MinesweeperCell {
   sealed trait Marked
   case object Unmarked   extends Marked
   case object MarkedMine extends Marked
-
-  sealed trait CellState {
-    def hasMine: Boolean
-    def isRevealed: Boolean
-  }
-
-  case class Unknown(override val hasMine: Boolean, marked: Marked) extends CellState {
-    override def isRevealed: Boolean = false
-  }
-
-  case class Empty(neighbors: Int) extends CellState {
-    override def hasMine: Boolean    = false
-    override def isRevealed: Boolean = true
-  }
 
   case class Props(
     state: CellState,
