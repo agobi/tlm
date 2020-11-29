@@ -48,7 +48,7 @@ final case class Board(
         )
 
       case None =>
-        copy(finished = Some(Lost(x, y)))
+        revealAll().copy(finished = Some(Lost(x, y)))
     }
 
     require(
@@ -62,11 +62,41 @@ final case class Board(
   private def revealCell(x: Int, y: Int): Option[(BoardArray, Int)] = {
     if (board(x)(y).hasMine) None
     else if (board(x)(y).isRevealed) Some(board -> 0)
-    else Some(revealCell(board, Set(x -> y), Set.empty))
+    else Some(revealCells(board, Set(x -> y), Set.empty))
+  }
+
+  private def revealAll(): Board = {
+    copy(
+      board = Vector.from(0 until xSize map { x =>
+        Vector.from(0 until ySize map { y =>
+          val cell = board(x)(y)
+          if (cell.isRevealed || cell.hasMine) cell
+          else revealOneCell(x, y)._1
+        })
+      }),
+      revealed = xSize * ySize - minesCount
+    )
+  }
+
+  private def revealOneCell(x: Int, y: Int): (Empty, IndexedSeq[(Int, Int)]) = {
+    require(!board(x)(y).isRevealed, "Internal error: already revealed!")
+    require(!board(x)(y).hasMine, "Internal error: mine!")
+
+    val neighbors = (-1 to 1) flatMap { dx =>
+      val x2 = x + dx
+      (-1 to 1) flatMap { dy =>
+        val y2 = y + dy
+        if (isIndexValid(x2, y2))
+          Some(x2 -> y2)
+        else None
+      }
+    }
+
+    Empty(neighbors.count { case (x, y) => board(x)(y).hasMine }) -> neighbors
   }
 
   @tailrec
-  private def revealCell(
+  private def revealCells(
     board: BoardArray,
     queue: Set[(Int, Int)],
     checked: Set[(Int, Int)]
@@ -74,28 +104,18 @@ final case class Board(
     queue.headOption match {
       case None => board -> checked.size
       case Some((x, y)) =>
-        require(!board(x)(y).isRevealed, "Internal error: already revealed!")
-        require(!board(x)(y).hasMine, "Internal error: mine!")
 
-        val neighbors = (-1 to 1) flatMap { dx =>
-          val x2 = x + dx
-          (-1 to 1) flatMap { dy =>
-            val y2 = y + dy
-            if (isIndexValid(x2, y2) && !queue.contains(x2 -> y2) && !checked.contains(x2 -> y2))
-              Some(x2 -> y2)
-            else None
-          }
-        }
+        val (cell, allNeighbors) = revealOneCell(x, y)
+        val neighbors = allNeighbors.filterNot(x => queue.contains(x) || checked.contains(x))
 
         val checked2 = checked + (x -> y)
         val row      = board(x)
-        val cell     = Empty(neighbors.count { case (x, y) => board(x)(y).hasMine })
         val queue2 = (
           if (cell.neighbors != 0) queue
           else queue ++ neighbors.filterNot { case (x, y) => board(x)(y).isRevealed }
         ) - (x -> y)
 
-        revealCell(board.updated(x, row.updated(y, cell)), queue2, checked2)
+        revealCells(board.updated(x, row.updated(y, cell)), queue2, checked2)
     }
   }
 }
