@@ -82,7 +82,12 @@ final case class Board(
     require(!board(x)(y).isRevealed, "Internal error: already revealed!")
     require(!board(x)(y).hasMine, "Internal error: mine!")
 
-    val neighbors = (-1 to 1) flatMap { dx =>
+    val neighbors = withValidNeighbors(x, y)
+    Empty(neighbors.count { case (x, y) => board(x)(y).hasMine }) -> neighbors
+  }
+
+  def withValidNeighbors(x: Int, y: Int): IndexedSeq[(Int, Int)] = {
+    (-1 to 1) flatMap { dx =>
       val x2 = x + dx
       (-1 to 1) flatMap { dy =>
         val y2 = y + dy
@@ -91,8 +96,6 @@ final case class Board(
         else None
       }
     }
-
-    Empty(neighbors.count { case (x, y) => board(x)(y).hasMine }) -> neighbors
   }
 
   @tailrec

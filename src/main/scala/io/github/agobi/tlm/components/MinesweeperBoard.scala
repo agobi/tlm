@@ -42,18 +42,36 @@ object MinesweeperBoard {
   @Lenses
   case class State(board: Board, mouseDown: Boolean, marked: Vector[Vector[Marked]])
 
-  class Backend(bs: BackendScope[Unit, State]) {
+  class Backend($: BackendScope[Unit, State]) {
+
     private def userGuess(x: Int, y: Int): Callback =
-      bs.modState(State.board.modify(board => board.get(x, y) match {
-        case Empty(_) =>
-          board
-        case Unknown(_) =>
-          board.guess(x, y)
-      }))
+      for {
+        s <- $.state
+        ret <- $.modState(State.board.modify(board => board.get(x, y) match {
+          case Unknown(_) if s.marked(x)(y) == Unmarked =>
+            board.guess(x, y)
+          case _ =>
+            board
+        }))
+      } yield ret
+
+    private def userGuessNeighbors(x: Int, y: Int): Callback = {
+      for {
+        state <- $.state
+        _ <- Callback.log("Heeee?")
+        neighbors = state.board.withValidNeighbors(x, y).map((userGuess _).tupled)
+        ret <- Callback.sequence(neighbors)
+      } yield ret
+    }
+
 
     private def restartGame(): Callback = {
-      bs.setState(initializeState)
+      $.setState(initializeState)
     }
+
+    def markCell(x: Int, y: Int): Callback =
+      $.modState(State.marked composeOptional index(x) composeOptional index(y) modify (_.next))
+
 
     def render(state: State): VdomTag = {
       val (failX, failY) = state.board.finished match {
@@ -66,9 +84,9 @@ object MinesweeperBoard {
           style.gameTable,
           <.caption(smileyFace(restartGame(), state.mouseDown, state.board.finished)),
           <.tbody(
-            ^.onMouseDown --> bs.modState(State.mouseDown.set(true)),
-            ^.onMouseUp --> bs.modState(State.mouseDown.set(false)),
-            ^.onMouseLeave --> bs.modState(State.mouseDown.set(false)),
+            ^.onMouseDown --> $.modState(State.mouseDown.set(true)),
+            ^.onMouseUp --> $.modState(State.mouseDown.set(false)),
+            ^.onMouseLeave --> $.modState(State.mouseDown.set(false)),
             state.board.board.zipWithIndex.map {
               case (row, x) =>
                 <.tr(
@@ -78,9 +96,8 @@ object MinesweeperBoard {
                         cell,
                         state.board.finished.isDefined,
                         userGuess(x, y),
-                        { f =>
-                          bs.modState(State.marked composeOptional index(x) composeOptional index(y) modify f)
-                        },
+                        userGuessNeighbors(x, y),
+                        markCell(x, y),
                         x == failX && y == failY,
                         state.marked(x)(y)
                       )

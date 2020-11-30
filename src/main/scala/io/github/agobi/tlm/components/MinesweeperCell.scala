@@ -11,9 +11,16 @@ import scalacss.ScalaCssReact._
 
 
 object MinesweeperCell {
-  sealed trait Marked
-  case object Unmarked   extends Marked
-  case object MarkedMine extends Marked
+  sealed abstract class Marked {
+    def next: Marked
+  }
+
+  case object Unmarked   extends Marked {
+    override def next: Marked = MarkedMine
+  }
+  case object MarkedMine extends Marked {
+    override def next: Marked = Unmarked
+  }
 
   val Neighbors =
     ScalaComponent.builder[Int]
@@ -26,12 +33,13 @@ object MinesweeperCell {
 
 
   case class Props(
-    state: CellState,
-    finished: Boolean,
-    onClick: Callback,
-    onMark: (Marked => Marked) => Callback,
-    failed: Boolean,
-    marked: Marked
+                    state: CellState,
+                    finished: Boolean,
+                    onClick: Callback,
+                    onDoubleClick: Callback,
+                    onRightClick: Callback,
+                    failed: Boolean,
+                    marked: Marked
   )
 
   @Lenses
@@ -66,15 +74,10 @@ object MinesweeperCell {
       }
     }
 
-
-    private def contextHandler(onMark: (Marked => Marked) => Callback)(e: Event): Callback = {
+    private def contextHandler(callback: Callback)(e: Event): Callback = {
       e.preventDefault()
-      onMark {
-        case Unmarked => MarkedMine
-        case MarkedMine => Unmarked
-      }
+      callback
     }
-
 
     private def renderGameCell(props: Props, state: State): VdomTag = {
       props.state match {
@@ -85,7 +88,8 @@ object MinesweeperCell {
               style.clickableGameCell(state.pushed),
               renderUserMark(props.marked, None),
               ^.onClick --> props.onClick,
-              ^.onContextMenu ==> contextHandler(props.onMark),
+              ^.onDoubleClick --> props.onDoubleClick,
+              ^.onContextMenu ==> contextHandler(props.onRightClick),
               ^.onMouseDown --> $.modState(State.pushed.set(true)),
               ^.onMouseUp --> $.modState(State.pushed.set(false)),
               ^.onMouseEnter ==> { e => $.modState(State.pushed.set(e.buttons != 0)) },
@@ -93,7 +97,12 @@ object MinesweeperCell {
             )
           )
         case Empty(neighbors) =>
-          <.td(style.gameCell(false), Neighbors(neighbors))
+          <.td(
+            style.gameCell(false),
+            Neighbors(neighbors),
+            ^.onDoubleClick -->  props.onDoubleClick,
+            ^.onContextMenu ==> contextHandler(Callback.empty),
+          )
       }
     }
   }
@@ -108,9 +117,10 @@ object MinesweeperCell {
     state: CellState,
     finished: Boolean,
     onClick: Callback,
-    onMark: (Marked => Marked) => Callback,
+    onDoubleClick: Callback,
+    onRightClick: Callback,
     failed: Boolean,
     marked: Marked
-  ) = component(Props(state, finished, onClick, onMark, failed, marked))
+  ) = component(Props(state, finished, onClick, onDoubleClick, onRightClick, failed, marked))
 
 }
