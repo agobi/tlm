@@ -2,6 +2,7 @@ package io.github.agobi.tlm.model
 
 
 import scala.annotation.tailrec
+import scala.reflect.ClassTag
 import scala.util.Random
 
 
@@ -19,6 +20,47 @@ case class Empty(neighbors: Int) extends CellState(true) {
 sealed trait Finished
 final case class Lost(p: Board.Position) extends Finished
 case object Win                          extends Finished
+
+final class RandomQueue[T: ClassTag] private (random: Random, state: Array[T], size: Int) {
+  def headOption: Option[T] = {
+    if (size == 0) None
+    else {
+      Some(state(size - 1))
+    }
+  }
+
+  def tail: RandomQueue[T] = {
+    if (size == 0) throw new IllegalStateException("Cannot remove from empty RandomQueue")
+    else new RandomQueue(random, state, size - 1)
+  }
+
+  def +(elem: T): RandomQueue[T] = {
+    val newState = if(size == state.length) {
+      val a = Array.ofDim[T](size * 3 / 2)
+      Array.copy(state, 0, a, 0, size)
+      a
+    } else state
+
+    val position = random.nextInt(size + 1)
+    if (position == size) {
+      newState(size) = elem
+    } else {
+      newState(size) = newState(position)
+      newState(position) = elem
+    }
+
+    new RandomQueue[T](random, newState, size + 1)
+  }
+
+  def ++(elems: Iterable[T]): RandomQueue[T] = {
+    elems.foldLeft(this)(_ + _)
+  }
+}
+
+object RandomQueue {
+  def empty[T : ClassTag]: RandomQueue[T] = new RandomQueue[T](Random, Array.ofDim(8), 0)
+  def empty[T : ClassTag](random: Random): RandomQueue[T] = new RandomQueue[T](random, Array.ofDim(8), 0)
+}
 
 final case class Board private (
   params: BoardParams,
@@ -108,30 +150,30 @@ final case class Board private (
     next: (Board.Position, Int),
     cs: ConstraintSet,
     board: Board.BoardArray,
-    queue: Set[Board.Position] = Set.empty,
-    checked: Set[Board.Position] = Set.empty
+    queued: RandomQueue[Board.Position] = RandomQueue.empty[Board.Position](random),
+    checked: Set[Board.Position] = Set.empty,
+    revealCount: Int = 0
   ): (ConstraintSet, Board.BoardArray, Int) = {
     val (p, cell) = next
     println(s"Revealing cell: $p -> $cell")
 
     val board2 = board.updated(p.p, Empty(cell))
-    val checked2 = checked + p
 
     val neighbors = params
       .neighbors(p)
-      .filterNot(x => board2(x.p).isRevealed || queue.contains(x) || checked2.contains(x))
+      .filterNot(x => board2(x.p).isRevealed || checked.contains(x))
 
-    val queue2 =
-      if (cell != 0) queue
-      else queue ++ neighbors
+    val (queue2, checked2) =
+      if (cell != 0) queued -> (checked - p)
+      else (queued ++ neighbors) -> (checked ++ neighbors - p)
+
 
     queue2.headOption match {
       case Some(next) =>
         val (c, cs2) = getSolutions(next, cs).get
-        revealCells(next -> c, cs2, board2, queue2.tail, checked2)
-
+        revealCells(next -> c, cs2, board2, queue2.tail, checked2, revealCount + 1)
       case None =>
-        (cs, board2, checked2.size)
+        (cs, board2, revealCount + 1)
     }
   }
 
