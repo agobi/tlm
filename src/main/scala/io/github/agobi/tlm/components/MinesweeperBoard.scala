@@ -1,7 +1,7 @@
 package io.github.agobi.tlm.components
 
 import io.github.agobi.tlm.components.MinesweeperCell.{Marked, Unmarked}
-import io.github.agobi.tlm.model._
+import io.github.agobi.tlm.model.{Board, _}
 import io.github.agobi.tlm.styles.{DefaultCommonStyle => style}
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{ScalaComponent, _}
@@ -29,7 +29,7 @@ object MinesweeperBoard {
               case None if props.worried => "\uD83D\uDE1F"
               case None                  => "\uD83D\uDE42"
               case Some(Win)             => "\uD83D\uDE0E"
-              case Some(Lost(_, _))      => "\uD83D\uDE35"
+              case Some(Lost(_))         => "\uD83D\uDE35"
             }
           )
         )
@@ -40,26 +40,25 @@ object MinesweeperBoard {
     SmileyFace(SmileyFaceProps(onClick, worried, finished))
 
   @Lenses
-  case class State(board: Board, mouseDown: Boolean, marked: Vector[Vector[Marked]])
+  case class State(board: Board, mouseDown: Boolean, marked: Vector[Marked])
 
   class Backend($: BackendScope[Unit, State]) {
 
-    private def userGuess(x: Int, y: Int): Callback =
+    private def userGuess(p: Board.Position): Callback =
       for {
         s <- $.state
-        ret <- $.modState(State.board.modify(board => board.get(x, y) match {
-          case Unknown(_) if s.marked(x)(y) == Unmarked =>
-            board.guess(x, y)
+        ret <- $.modState(State.board.modify(board => board.get(p) match {
+          case Unknown(_) if s.marked(p.p) == Unmarked =>
+            board.guess(p)
           case _ =>
             board
         }))
       } yield ret
 
-    private def userGuessNeighbors(x: Int, y: Int): Callback = {
+    private def userGuessNeighbors(p: Board.Position): Callback = {
       for {
         state <- $.state
-        _ <- Callback.log("Heeee?")
-        neighbors = state.board.withValidNeighbors(x, y).map((userGuess _).tupled)
+        neighbors = state.board.params.withValidNeighbors(p).map(userGuess)
         ret <- Callback.sequence(neighbors)
       } yield ret
     }
@@ -69,14 +68,14 @@ object MinesweeperBoard {
       $.setState(initializeState)
     }
 
-    def markCell(x: Int, y: Int): Callback =
-      $.modState(State.marked composeOptional index(x) composeOptional index(y) modify (_.next))
+    def markCell(p: Board.Position): Callback =
+      $.modState(State.marked composeOptional index(p.p) modify (_.next))
 
 
     def render(state: State): VdomTag = {
-      val (failX, failY) = state.board.finished match {
-        case Some(Lost(x, y)) => x -> y
-        case _                => -1 -> -1
+      val failPosition: Board.Position = state.board.finished match {
+        case Some(Lost(p)) => p
+        case _             => Board.NoPosition
       }
 
       <.div(
@@ -87,19 +86,19 @@ object MinesweeperBoard {
             ^.onMouseDown --> $.modState(State.mouseDown.set(true)),
             ^.onMouseUp --> $.modState(State.mouseDown.set(false)),
             ^.onMouseLeave --> $.modState(State.mouseDown.set(false)),
-            state.board.board.zipWithIndex.map {
-              case (row, x) =>
+            state.board.rows.map {
+              case row =>
                 <.tr(
-                  row.zipWithIndex.map {
-                    case (cell, y) =>
+                  row.map {
+                    case (p, cell) =>
                       MinesweeperCell(
                         cell,
                         state.board.finished.isDefined,
-                        userGuess(x, y),
-                        userGuessNeighbors(x, y),
-                        markCell(x, y),
-                        x == failX && y == failY,
-                        state.marked(x)(y)
+                        userGuess(p),
+                        userGuessNeighbors(p),
+                        markCell(p),
+                        p == failPosition,
+                        state.marked(p.p)
                       )
                   }.toTagMod
                 )
@@ -115,7 +114,7 @@ object MinesweeperBoard {
     val ySize     = 10
     val mineCount = 10
 
-    val marks = Vector.from(0 until xSize map { _ => Vector.from(0 until ySize map { _ =>  Unmarked } ) } )
+    val marks = Vector.from(0 until xSize * ySize map { _ =>  Unmarked } )
     State(Board(xSize, ySize, mineCount), mouseDown = false, marks)
   }
 
