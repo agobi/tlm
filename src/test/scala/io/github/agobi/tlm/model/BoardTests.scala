@@ -7,8 +7,8 @@ object BoardTests extends TestSuite {
   val seed: Int = 0
 
   private def getKnownCells(b: Board): Seq[((Int, Int), Int)] = {
-    b.board.zipWithIndex.collect {
-      case (Empty(n), p) => b.params.getCoordinates(Board.Position(p)) -> n
+    b.rows.flatten.collect {
+      case (p, Empty(n)) => b.params.getCoordinates(p) -> n
     }
   }
 
@@ -47,6 +47,16 @@ object BoardTests extends TestSuite {
         println(getKnownCells(r))
         r
       }
+    }
+
+    test("finds wrong guess") {
+      val b = Board(10, 10, 10, 1853568938)
+      val bad = List(0 -> 0, 3 -> 6).foldLeft(b) { case (b, p) =>
+        val r = b.guess(b.params.getPosition(p._1, p._2))
+        println(getKnownCells(r))
+        r
+      }
+      assert(bad.finished.nonEmpty)
     }
   }
 }

@@ -1,7 +1,5 @@
 package io.github.agobi.tlm.model
 
-import scala.util.Random
-
 case class BoardParams(xSize: Int, ySize: Int, minesCount: Int, seed: Int) {
   require(xSize > 2 && ySize > 2)
 
@@ -41,7 +39,7 @@ case class BoardParams(xSize: Int, ySize: Int, minesCount: Int, seed: Int) {
 }
 
 object BoardParams {
-  def apply(xSize: Int, ySize: Int, minesCount: Int): BoardParams = {
-    new BoardParams(xSize, ySize, minesCount, seed = Random.nextInt())
+  def apply(xSize: Int, ySize: Int, minesCount: Int, seed: Int): BoardParams = {
+    new BoardParams(xSize = xSize, ySize = ySize, minesCount = minesCount, seed = seed)
   }
 }

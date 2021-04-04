@@ -79,6 +79,7 @@ object MinesweeperBoard {
       }
 
       <.div(
+        <.div(state.board.params.seed),
         <.table(
           style.gameTable,
           <.caption(smileyFace(restartGame(), state.mouseDown, state.board.finished)),
