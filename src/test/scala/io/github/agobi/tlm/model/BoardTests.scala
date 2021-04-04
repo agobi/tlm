@@ -20,7 +20,6 @@ object BoardTests extends TestSuite {
         println(getKnownCells(r))
         r
       }
-
     }
 
     test("2nd test") {

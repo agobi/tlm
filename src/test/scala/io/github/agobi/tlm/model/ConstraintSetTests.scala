@@ -16,7 +16,8 @@ object ConstraintSetTests extends TestSuite {
     }
 
     test("9 mines in 9x9, 3 in the top left corner") {
-      val lhs = c.add(b.getPosition(0, 0), 3).solutionCount
+      val cs = c.add(b.getPosition(0, 0), 3)
+      val lhs = cs.solutionCount
       val rhs = choose(9 * 9 - 4, 6)
       assert(lhs == rhs)
     }
@@ -40,7 +41,6 @@ object ConstraintSetTests extends TestSuite {
       assert(lhs == rhs)
     }
 
-
     test("No solution") {
       val steps = List(55 -> 0, 56 -> 0, 65 -> 0, 74 -> 0, 84 -> 0, 85 -> 0, 96 -> 0, 97 -> 0, 88 -> 0)
 
@@ -52,5 +52,13 @@ object ConstraintSetTests extends TestSuite {
       val cs2 = cs.add(Board.Position(89), 1)
       assert(cs2.solutionCount == 0)
     }
+
+//    test("9 mines in 9x9, mine is on top left") {
+//      val cs = c.add(b.getPosition(1, 1), 1).add(b.getPosition(0, 1), 1).add(b.getPosition(1, 0), 1)
+//      val lhs = cs.solutionCount
+//      val rhs = choose(9 * 8, 8)
+//      assert(lhs == rhs)
+//      assert(cs.solvedMine == Set(Board.Position(0)))
+//    }
   }
 }
